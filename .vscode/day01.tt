@@ -1,0 +1,28 @@
+composer parse-instructions
+  <left|right>
+  rule left: (<='L'>) <INT "L">
+  rule right: (<='R'>) <INT "R">
+end parse-instructions
+    
+def instructions: [$IN::lines -> parse-instructions];
+
+templates part1
+  sink update-zeroes
+    when <=0"1"> do
+      @part1(zeroes:): $@part1(zeroes:) + 1"1";
+  end update-zeroes
+  @: { zeroes: 0"1", position: 50"1"};
+  $... -> #
+  $@(zeroes:) !
+
+  when <"L"> do
+    @(position:): ($@(position:) - $)"1" mod 100"1";
+    $@(position:) -> !update-zeroes
+  when <"R"> do
+    @(position:): ($@(position:) + $)"1" mod 100"1";
+    $@(position:) -> !update-zeroes
+end part1
+
+$instructions -> part1 -> !OUT::write
+'
+' -> !OUT::write
