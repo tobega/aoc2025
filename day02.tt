@@ -1,0 +1,55 @@
+composer parse-intervals
+  [<interval>+]
+  rule interval: { start: <INT "1">, (<='-'>) end: <INT "1"> } (<=','>?)
+end parse-intervals
+
+def intervals: $IN::readline -> parse-intervals;
+
+processor PatternGenerator
+  @: {top: 10"1", value: 0"1"};
+  source next
+    $@PatternGenerator(value:) + 1"1" -> #
+    $@PatternGenerator -> $.value * $.top + $.value !
+
+    when <$@PatternGenerator(top:)..> do
+      @PatternGenerator: { top: $@PatternGenerator(top:) * 10"1", value: $ };
+    otherwise
+      @PatternGenerator(value:): $;
+ end next
+end PatternGenerator
+
+processor Accumulator
+  def ranges: $;
+  @: 0"1";
+
+  templates add-in-range
+    def value: $;
+    @: { add: 0"1", remaining:[] };
+    $ranges... -> #
+    @Accumulator: $@Accumulator + $@(add:);
+    $@(remaining:)... !
+
+    when <{start: <..$value>, end: <$value..>}> do
+      @: { add: $@(add:) + $value, remaining: [1] };
+    when <{end: <$value~..>}> do
+      @(remaining:): [1];
+  end add-in-range
+
+  source result
+    $@Accumulator !
+  end result
+end Accumulator
+
+templates part1
+  def accumulator: $ -> Accumulator;
+  def generator: $PatternGenerator;
+  $generator::next -> #
+  $accumulator::result !
+
+  otherwise
+    $ -> accumulator::add-in-range -> $generator::next -> #
+end part1
+
+$intervals -> part1 -> !OUT::write
+'
+' -> !OUT::write
