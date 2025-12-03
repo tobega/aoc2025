@@ -1,0 +1,41 @@
+composer parse-intervals
+  [<interval>+]
+  rule interval: { start: <INT "1">, (<='-'>) end: <INT "1"> } (<=','>?)
+end parse-intervals
+
+def intervals: $IN::readline -> parse-intervals;
+
+composer check-repeat
+  <repeat|not>
+  rule repeat: <'(\d+?)\1$$'> -> 1
+  rule not: (<'.*'>)
+end check-repeat
+
+templates part1
+  $... -> $(start:)..$(end:) -> \(
+    def value: $;
+    '$::raw;' -> check-repeat -> $value !
+  \) -> ..=Sum&{of: :()} !
+end part1
+
+$intervals -> part1 -> !OUT::write
+'
+' -> !OUT::write
+
+composer check-pattern
+  <pattern|not>
+  rule pattern: <'(\d+?)\1+$$'> -> 1
+  rule not: (<'.*'>)
+end check-pattern
+
+
+templates part2
+  $... -> $(start:)..$(end:) -> \(
+    def value: $;
+    '$::raw;' -> check-pattern -> $value !
+  \) -> ..=Sum&{of: :()} !
+end part2
+
+$intervals -> part2 -> !OUT::write
+'
+' -> !OUT::write
