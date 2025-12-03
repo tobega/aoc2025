@@ -1,0 +1,22 @@
+composer to-int
+  <INT>
+end to-int
+
+def banks: [$IN::lines -> [$ ... -> to-int]];
+
+templates max-joltage
+  @: [$(1), $(2)];
+  $(3..last)... -> #
+  $@(1) * 10 + $@(2) !
+
+  when <?($@(1) <..~$@(2)>)> do @: [$@(2), $];
+  when <$@(2)~..> do @: [$@(1), $];
+end max-joltage
+
+templates part1
+  $ ... -> max-joltage -> ..=Sum&{of: :()} !
+end part1
+
+$banks -> part1 -> !OUT::write
+'
+' -> !OUT::write
