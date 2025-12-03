@@ -7,11 +7,20 @@ cmd
 solve :
     get input from File("/Users/tobe/code/aoc2025/input.txt")
     instructions = parseInput input
-    post instructions
+    post partOne(instructions)
 
 def
 
 parseInput(i) :
     from pairs = [] for _::l = range split(trim(i, " \n"), "\n") :
         pairs + [l[0]::l[1::len(l)]]
+
+partOne(moves) :
+    second from pos, zeroes = 50, 0 for _::move = range moves :
+        newPos, zeroes + (newPos == 0 : 1; else : 0)
+    given:
+        newPos = move[0] == "R" :
+            (pos + move[1]) mod 100
+        else :
+            (pos - move[1]) mod 100
 
