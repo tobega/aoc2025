@@ -20,3 +20,26 @@ end part1
 $banks -> part1 -> !OUT::write
 '
 ' -> !OUT::write
+
+templates squeeze
+  def bank: $;
+  $::first -> #
+
+  when <=$bank::last> do $bank(first..~last) !
+  when <?($bank($) <..~$bank($ + 1)>)> do $bank([first..~$, $~..last]) !
+  otherwise $ + 1 -> #
+end squeeze
+
+templates max-override-joltage
+  @: $(first..first+11);
+  $(first+12..last)... -> @: [$@..., $] -> squeeze;
+  '$@...;' -> to-int !
+end max-override-joltage
+
+templates part2
+  $ ... -> max-override-joltage -> ..=Sum&{of: :()} !
+end part2
+
+$banks -> part2 -> !OUT::write
+'
+' -> !OUT::write
