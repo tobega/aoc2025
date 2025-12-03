@@ -5,7 +5,7 @@ end parse-intervals
 
 def intervals: $IN::readline -> parse-intervals;
 
-processor PatternGenerator
+processor InvalidIdGenerator
   processor Repeat
     def top: $(top:);
     def base: $(value:);
@@ -19,29 +19,29 @@ processor PatternGenerator
 
   @: {top: 10"1", value: 0"1", half-multiplier: 10"1", half: 1"1"};
   source next
-    $@PatternGenerator(value:) + 1"1" -> #
-    $@PatternGenerator -> $.value * $.top + $.value !
+    $@InvalidIdGenerator(value:) + 1"1" -> #
+    $@InvalidIdGenerator -> $.value * $.top + $.value !
 
-    when <$@PatternGenerator(top:)..> do
-      @PatternGenerator: $@PatternGenerator(
+    when <$@InvalidIdGenerator(top:)..> do
+      @InvalidIdGenerator: $@InvalidIdGenerator(
         { top: §(top:) * 10"1",
           value: $,
           half-multiplier: (§(half-multiplier:) * 10"1") mod 99"1",
           half: §(half:) * §(half-multiplier:)
         });
     otherwise
-      @PatternGenerator(value:): $;
+      @InvalidIdGenerator(value:): $;
  end next
 
- source repeater
+ source pattern-repeater
    // Assumption: only need to exclude values that are a double-pattern
-   $@PatternGenerator -> #
+   $@InvalidIdGenerator -> #
    
    when <{half-multiplier: <=10"1">}
      |{half-multiplier: <=1"1">}?($(value:) ~/ $(half:) <~=$(value:) mod $(half:)>)> do
-     $@PatternGenerator -> Repeat !
-  end repeater
-end PatternGenerator
+     $@InvalidIdGenerator -> Repeat !
+  end pattern-repeater
+end InvalidIdGenerator
 
 processor Accumulator
   def ranges: $;
@@ -67,7 +67,7 @@ end Accumulator
 
 templates part1
   def accumulator: $ -> Accumulator;
-  def generator: $PatternGenerator;
+  def generator: $InvalidIdGenerator;
   $generator::next -> #
   $accumulator::result !
 
@@ -81,17 +81,17 @@ $intervals -> part1 -> !OUT::write
 
 templates part2
   def accumulator: $ -> Accumulator;
-  def generator: $PatternGenerator;
+  def generator: $InvalidIdGenerator;
   $generator::next -> #
   $accumulator::result !
 
   otherwise
-    $generator::repeater -> \(
-        def repeater: $;
-        $repeater::multiple -> #
+    $generator::pattern-repeater -> \(
+        def pattern-repeater: $;
+        $pattern-repeater::multiple -> #
 
         otherwise
-          $ -> accumulator::add-in-range -> $repeater::multiple -> #
+          $ -> accumulator::add-in-range -> $pattern-repeater::multiple -> #
     \) -> !VOID
     $ -> accumulator::add-in-range -> $generator::next -> #
 end part2
