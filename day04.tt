@@ -1,0 +1,59 @@
+def input: [$IN::lines];
+
+def roll-locations: [$input... -> [$... -> \(when <='@'> do 1"roll"! otherwise 0"roll"!\)]];
+
+source part1
+  $roll-locations -> \[i;j](
+    when <=1"roll"> do $roll-locations($i - 1..$i + 1; $j - 1..$j + 1)
+      ... ... -> ..=Sum&{of: :()}
+      -> \(when <..~5"roll"> do 1!\) !
+  \) ... ... -> ..=Sum&{of: :()} !
+end part1
+
+$part1 -> !OUT::write
+'
+' -> !OUT::write
+
+source part2
+  @: {done: 0, removed: 0"roll"};
+  $roll-locations -> #
+  $@(removed:) !
+
+  when <?($@(done:) <=done´0>)> do
+    @(done:): 1;
+    def locations-left: $;
+    $ -> \[i;j](
+      when <=1"roll"> do $locations-left($i - 1..$i + 1; $j - 1..$j + 1)
+        ... ... -> ..=Sum&{of: :()}
+        -> \(
+          when <..~5"roll"> do
+            @part2: {done: 0, removed: $@part2(removed:) + 1"roll"};
+            0"roll" !
+          otherwise 1"roll" !
+        \) !
+      otherwise $ !
+    \) -> #
+end part2
+
+$part2 -> !OUT::write
+'
+' -> !OUT::write
+
+test 'part2'
+  modify program
+    def input: [
+      '..@@.@@@@.',
+      '@@@.@.@.@@',
+      '@@@@@.@.@@',
+      '@.@@@@..@.',
+      '@@.@@@@.@@',
+      '.@@@@@@@.@',
+      '.@.@.@.@@@',
+      '@.@@@.@@@@',
+      '.@@@@@@@@.',
+      '@.@.@@@.@.'
+    ];
+  end program
+
+  assert $part2 <=43"roll"> 'example'
+end 'part2'
