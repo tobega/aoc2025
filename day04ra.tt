@@ -1,0 +1,52 @@
+def input: [$IN::lines];
+
+def roll-locations: {| $input -> \[i](
+    [$...] -> \[j](
+        when <='@'> do { i: ($i)"i", j: ($j)"j"} !
+    \) !
+\) ... ... |};
+
+def accessible: {| 0"1"..3"1" -> { neighbours: $} |};
+
+templates get-adjacents
+  def coords: $;
+  ($coords({i: §(i:) + 1"i", j:, c: 'n'}) union $coords({i: §(i:) + 1"i", j: §(j:) + 1"j", c: 'ne'}))
+  -> ($ union $coords({i:, j: §(j:) + 1"j", c: 'e'}))
+  -> ($ union $coords({i: §(i:) - 1"i", j: §(j:) + 1"j", c: 'se'}))
+  -> ($ union $coords({i: §(i:) - 1"i", j: , c: 's'}))
+  -> ($ union $coords({i: §(i:) - 1"i", j: §(j:) - 1"j", c: 'sw'}))
+  -> ($ union $coords({i: , j: §(j:) - 1"j", c: 'w'}))
+  -> ($ union $coords({i: §(i:) + 1"i", j: §(j:) - 1"j", c: 'nw'})) !
+end get-adjacents
+
+templates part1
+  def locations: $;
+  $locations -> get-adjacents -> $(collect {neighbours: Count} by $locations)
+  -> ($ matching $accessible) -> $({i:,j:}) !
+end part1
+
+def first-removable: $roll-locations -> part1;
+
+$first-removable -> $::count -> !OUT::write
+'
+' -> !OUT::write
+
+templates part2
+  @: 0;
+  $ -> #
+  $@ !
+
+  when <?($(removed:)::count <0~..>)> do
+    @: $@ + $(removed:)::count;
+    def remaining: $(remaining:);
+    def maybe-removable: $(removed:) -> get-adjacents -> ($remaining matching $);
+    def neighbours: $maybe-removable -> get-adjacents -> ($remaining matching $);
+    def removable: $neighbours -> get-adjacents -> $(collect {neighbours: Count} by $maybe-removable)
+    -> ($ matching $accessible) -> $({i:,j:});
+    { remaining: ($remaining minus $removable), removed: $removable} -> #
+end part2
+
+{ remaining: ($roll-locations minus $first-removable), removed: $first-removable}
+-> part2 -> !OUT::write
+'
+' -> !OUT::write
