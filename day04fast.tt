@@ -1,0 +1,39 @@
+def input: [$IN::lines -> [$...]];
+
+templates solve&{part:}
+  @:{grid: $, removable: 0"1"};
+
+  templates get-adjacent-rolls
+    def base: $;
+    [[by -1..1, by -1..1] -> [$base(1) + $(1), $base(2) + $(2)] -> #] !
+
+    when <?($(1) <..~$@solve(grid:)::first>)|?($(1) <$@solve(grid:)::last~..>)
+      |?($(2) <..~$@solve(grid:;first)::first>)|?($(2) <$@solve(grid:;first)::last~..>)> do
+      !VOID
+    when <?($@solve(grid:; $(1); $(2)) <='@'>)> do
+      $ !
+  end get-adjacent-rolls
+
+  [by $::first.. $::last, by $(first)::first..$(first)::last] -> #
+  $@(removable:) !
+
+  when <?($@(grid:; $(1); $(2)) <='@'>)> do
+    def position: $;
+    def adjacent: $ -> get-adjacent-rolls;
+    $adjacent -> \(
+        when <[](..~5)> do
+          @solve(removable:): $@solve(removable:) + 1"1";
+          1 !
+    \) -> $part -> \(when <=part´2> do
+      @solve(grid:; $position(1); $position(2)): '.';
+      $adjacent!
+    \) ... -> #
+end solve
+
+$input -> solve&{part: 1} -> !OUT::write
+'
+' -> !OUT::write
+
+$input -> solve&{part: 2} -> !OUT::write
+'
+' -> !OUT::write
