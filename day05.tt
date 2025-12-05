@@ -1,0 +1,63 @@
+composer parse-range
+  { start: <ingredient-id´INT>, (<='-'>) end: <ingredient-id´INT> }
+end parse-range
+
+source read-ranges
+  @: [];
+  $IN::readline -> #
+  $@ !
+
+  when <~=''> do
+    $ -> parse-range -> ..|@: $;
+    $IN::readline -> #
+end read-ranges
+
+composer parse-ingredient
+  <ingredient-id´INT>
+end parse-ingredient
+
+def ranges: $read-ranges;
+def ingredients: [$IN::lines -> parse-ingredient];
+
+source part1
+  templates if-fresh
+    @: $ranges;
+    def ingredient: $;
+    ^@(first..first)... -> #
+
+    when <{start: <..$ingredient>, end: <$ingredient..>}> do $ingredient !
+    otherwise ^@(first..first)...  -> #
+  end if-fresh
+ 
+  $ingredients... -> if-fresh -> ..=Count !
+end part1
+
+$part1 -> !OUT::write
+'
+' -> !OUT::write
+
+source part2
+  @: $ranges;
+  [^@(first..first)...  -> #] ... -> $(end:)::raw - $(start:)::raw + 1 -> ..=Sum&{of: :()} !
+
+  when <?($@ <[<{start: <$(start:)..$(end:)>}
+    |{end: <$(start:)..$(end:)>}
+    |{start: <..$(start:)>, end: <$(end:)..>}>]>)
+  > do
+    def to-merge: $;
+    @: [$@... -> \(
+          when <{start: <$to-merge(start:)~..$to-merge(end:)>}> do
+            { start: $to-merge(start:), end: $(end:)} -> #
+          when <{end: <$to-merge(start:)..~$to-merge(end:)>}> do
+            { start: $(start:), end: $to-merge(end:)} -> #
+          otherwise $ !
+        \)];
+    ^@(first..first)...  -> #
+  otherwise
+    $ !
+    ^@(first..first)...  -> #
+end part2
+
+$part2 -> !OUT::write
+'
+' -> !OUT::write
