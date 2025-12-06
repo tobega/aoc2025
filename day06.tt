@@ -1,0 +1,59 @@
+def sheet: [$IN::lines -> [$...]];
+
+def boundaries: $sheet(1) -> \[i](when <=' '?($sheet(first..last; $i) <[<=' '>+ VOID]>)> do $i ! \);
+
+source get-columns
+  @: 0;
+  [$boundaries... -> #, $sheet(1)::last + 1 -> #] !
+  otherwise
+    $sheet(first..last; $@~..~$) !
+    @: $;
+end get-columns
+
+composer to-number
+  (<'\s*'>) <INT> (<'\s*'>)
+end to-number
+
+processor Product
+  @: 1;
+  sink accumulate
+    @Product: $@Product * $;
+  end accumulate
+  source result
+    $@Product !
+  end result
+end Product
+
+templates calculate-column
+  def column: $;
+  $(last; 1) -> #
+  when <='+'> do
+    $column(first..~last)... -> '$...;' -> to-number -> ..=Sum&{of: :()} !
+  when <='*'> do
+    $column(first..~last)... -> '$...;' -> to-number -> ..=Product !
+end calculate-column
+
+source part1
+  $get-columns... -> calculate-column -> ..=Sum&{of: :()} !
+end part1
+
+$part1 -> !OUT::write
+'
+' -> !OUT::write
+
+templates calculate-cephalopod-column
+  def column: $;
+  $(last; 1) -> #
+  when <='+'> do
+    $column(1) -> \[i]( $column(first..~last; $i) ! \) -> $... -> '$...;' -> to-number -> ..=Sum&{of: :()} !
+  when <='*'> do
+    $column(1) -> \[i]( $column(first..~last; $i) ! \) -> $... -> '$...;' -> to-number -> ..=Product !
+end calculate-cephalopod-column
+
+source part2
+  $get-columns... -> calculate-cephalopod-column -> ..=Sum&{of: :()} !
+end part2
+
+$part2 -> !OUT::write
+'
+' -> !OUT::write
