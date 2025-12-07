@@ -1,0 +1,65 @@
+composer parse-box
+  [<INT>, (<=','>) <INT>, (<=','>) <INT>]
+end parse-box
+
+def boxes: [$IN::lines -> parse-box];
+
+// A max heap for k elements in k-select (which will select the k smallest elements)
+// extensible to allow k = 0 as unlimited
+// in v0.5, a transform in on: should allow using as min heap
+processor Heap&{k:, on:}
+  @:[];
+
+  source get-unsorted
+    $@Heap !
+  end get-unsorted
+
+  sink bubble-up
+    def child: $;
+    def parent: $ ~/ 2;
+    $child -> \(when <1~..> do $@Heap($child; on) ! \) -> #
+
+    when <$@Heap($parent; on)~..> do
+      @Heap([$child, $parent]): $@Heap([$parent, $child])...;
+      $parent -> !bubble-up
+  end bubble-up
+
+  sink trickle-down
+    def left: $ * 2;
+    def right: $left + 1;
+    $ -> #
+
+    when <?($right <..$@Heap::last>)
+    ?($@Heap($right; on) <$@Heap($left; on)~..>)
+    ?($@Heap($right; on) <$@Heap($; on)~..>)> do
+      @Heap([$, $right]): $@Heap([$right, $])...;
+      $right -> !trickle-down
+    
+    when <?($left <..$@Heap::last>)
+    ?($@Heap($left; on) <$@Heap($; on)~..>)> do
+      @Heap([$, $left]): $@Heap([$left, $])...;
+      $left -> !trickle-down
+  end trickle-down
+
+  sink insert
+    when <?($@Heap::length <..~$k::raw>)> do
+      ..|@Heap: $;
+      $@Heap::last -> !bubble-up
+    
+    when <?($(on) <..~$@Heap(1; on)>)> do
+      @Heap(1): $;
+      1 -> !trickle-down
+  end insert
+end Heap
+
+test 'K-select'
+  def heap: $Heap&{k: 3, on: :(age:)};
+  [{name: 'Alice', age: 3},
+   {name: 'Bob', age: 66},
+   {name: 'Debra', age: 9},
+   {name: 'Eva', age: 11},
+   {name: 'Charlie', age: 15},
+   {name: 'Frank', age: 5}]... -> !heap::insert
+
+  assert $heap::get-unsorted <[<{name: <='Debra'>}>, <{name: <='Alice'>}>, <{name: <='Frank'>}>](3)> 'has exactly all expected'
+end 'K-select'
