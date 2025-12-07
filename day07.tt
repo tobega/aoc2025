@@ -1,0 +1,19 @@
+def start: [$IN::readline ...] -> \[i](when <='S'> do { x: ($i)"x" } ! \) ...;
+
+def splitters: [$IN::lines -> {| [$...] -> \[i](when <='^'> do { x: ($i)"x" } ! \)... |}];
+
+source part1
+  @: {splits: 0"1", beams: {| $start |}};
+  $splitters ... -> #
+  $@(splits:) !
+
+  otherwise
+    def splits: ($ matching $@(beams:));
+    @(splits:): $@(splits:) + ($splits::count)"1";
+    def new-beams: ($splits({x: §(x:) - 1"x"}) union $splits({x: §(x:) + 1"x"}));
+    @(beams:): (($@(beams:) minus $splits) union $new-beams);
+end part1
+
+$part1 -> !OUT::write
+'
+' -> !OUT::write
