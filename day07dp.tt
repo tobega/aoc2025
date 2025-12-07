@@ -1,0 +1,30 @@
+def start: [$IN::readline ...] -> \[i](when <='S'> do $i ! \) ...;
+
+def splitters: [$IN::lines -> [$...]];
+
+source part1
+  @: 0:[0..~$start -> 0, 1, $start~..$splitters(1)::length + 1 -> 0];
+  [$splitters... -> #]... -> ..=Sum&{of: :()} !
+
+  otherwise
+    $ -> \[i](when <='^'?($@part1($i) <=1>)> 1 !
+      @part1($i-1..$i+1): [1,0,1]...;
+    \) ... !
+end part1
+
+$part1 -> !OUT::write
+'
+' -> !OUT::write
+
+source part2
+  @: 0:[0..$splitters(1)::length + 1 -> 1];
+  $splitters(last..first:-1)... -> @: 0:[1, $ -> \[i](
+    when <='^'> do $@part2($i - 1) + $@part2($i + 1) !
+    otherwise $@part2($i) !
+  \)...  , 1];
+  $@($start) !
+end part2
+
+$part2 -> !OUT::write
+'
+' -> !OUT::write
