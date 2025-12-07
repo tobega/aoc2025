@@ -17,3 +17,21 @@ end part1
 $part1 -> !OUT::write
 '
 ' -> !OUT::write
+
+source part2
+  @: [ $start({x:, timelines: 1"1"}) ];
+  $splitters ... -> #
+  $@... -> ..=Sum&{of: :(timelines:)} !
+
+  otherwise
+    def splitter-line: $;
+    def splits: [$@... -> ({|$|} matching $splitter-line)...];
+    @: [$@... -> ({|$|} notMatching $splitter-line)...,
+      $splits... -> {$, x: $(x:) - 1"x"},
+      $splits... -> {$, x: $(x:) + 1"x"}]
+      -> $(collect {timelines: Sum&{of: :(timelines:)}} by $({x:}));
+end part2
+
+$part2 -> !OUT::write
+'
+' -> !OUT::write
