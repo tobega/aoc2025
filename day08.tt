@@ -5,8 +5,7 @@ end parse-box
 def boxes: [$IN::lines -> parse-box];
 
 // A max heap for k elements in k-select (which will select the k smallest elements)
-// extensible to allow k = 0 as unlimited
-// in v0.5, a transform in on: should allow using as min heap
+// in v0.5, a transform in on: should allow using as min heap, meanwhile transform first
 processor Heap&{k:, on:}
   @:[];
 
@@ -41,14 +40,19 @@ processor Heap&{k:, on:}
       $left -> !trickle-down
   end trickle-down
 
-  sink insert
-    when <?($@Heap::length <..~$k::raw>)> do
+  templates insert
+    when <?($k::raw <=0>)|?($@Heap::length <..~$k::raw>)> do
       ..|@Heap: $;
       $@Heap::last -> !bubble-up
     
     when <?($(on) <..~$@Heap(1; on)>)> do
+      def discarded: $@Heap(1);
       @Heap(1): $;
       1 -> !trickle-down
+      $discarded !
+    
+    otherwise
+      $ !
   end insert
 
   source pop
@@ -61,18 +65,26 @@ end Heap
 
 test 'K-select'
   def heap: $Heap&{k: 3, on: :(age:)};
-  [{name: 'Alice', age: 3},
+  assert [[{name: 'Alice', age: 3},
    {name: 'Bob', age: 66},
    {name: 'Debra', age: 9},
    {name: 'Eva', age: 11},
    {name: 'Charlie', age: 15},
-   {name: 'Frank', age: 5}]... -> !heap::insert
+   {name: 'Frank', age: 5}]... -> heap::insert]
+   <=[{name: 'Bob', age: 66}, {name: 'Charlie', age: 15}, {name: 'Eva', age: 11}]> 'outputs discarded'
 
   assert $heap::get-unsorted <[<{name: <='Debra'>}>, <{name: <='Alice'>}>, <{name: <='Frank'>}>](3)> 'has exactly all expected'
 
   assert $heap::pop <={name: 'Debra', age: 9}> 'pops largest of the smallest'
   assert $heap::get-unsorted <[<{name: <='Alice'>}>, <{name: <='Frank'>}>](2)> 'popped is removed'
 end 'K-select'
+
+test 'Max Heap'
+  def heap: $Heap&{k: 0, on: :()};
+  assert [1..2000 -> heap::insert] <=[]> 'none discarded'
+  assert $heap::get-unsorted -> $::length <=2000> 'all are kept'
+  assert $heap::pop <=2000> 'pops largest'
+end 'Max Heap'
 
 data element <..>
 data elements <[<element>+ VOID]>
@@ -123,10 +135,13 @@ test 'Disjoint-Sets'
   assert 8 -> ds::find <=0+(7 -> ds::find)> 'groups joined'
 end 'Disjoint-Sets'
 
-templates part1
-  def coords: $;
-  def min1000: $Heap&{k: 1000, on: :(distance:)};
+def sets: $boxes::length -> Disjoint-Sets;
+def remainder: $Heap&{k: 0, on: :(neg-dist:)};
 
+source part1
+  def coords: $boxes;
+
+  def min1000: $Heap&{k: 1000, on: :(distance:)};
   1..~$coords::last -> \(
     def i: $;
     $i~..$coords::last -> \(
@@ -134,9 +149,8 @@ templates part1
         1..3 -> ($coords($i; $) - $coords($j; $))"s" -> ($*$)"s2" -> ..=Sum&{of: :()}
         -> { from: box´$i, to: box´$j, distance: $} !
     \) !
-  \) -> !min1000::insert
+  \) -> min1000::insert -> $({from:, to:, neg-dist: -§(distance:)}) -> !remainder::insert
 
-  def sets: $coords::length -> Disjoint-Sets;
   $min1000::get-unsorted ... -> ($(from:) sets::union $(to:)) -> !VOID
 
   def maxheap: $Heap&{k: 1000, on: :(size:)};
@@ -144,6 +158,20 @@ templates part1
   ($maxheap::pop -> $(size:)::raw) * ($maxheap::pop -> $(size:)::raw) * ($maxheap::pop -> $(size:)::raw) !
 end part1
 
-$boxes -> part1 -> !OUT::write
+$part1 -> !OUT::write
+'
+' -> !OUT::write
+
+source part2
+  $sets::get-sets -> $::length -> #
+  $boxes($@(from:)::raw; 1) * $boxes($@(to:)::raw; 1) !
+
+  when <1~..> do
+    @: $remainder::pop;
+    $@ -> ($(from:) sets::union $(to:)) -> !VOID
+    $sets::get-sets -> $::length -> #
+end part2
+
+$part2 -> !OUT::write
 '
 ' -> !OUT::write
