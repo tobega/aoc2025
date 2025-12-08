@@ -50,6 +50,13 @@ processor Heap&{k:, on:}
       @Heap(1): $;
       1 -> !trickle-down
   end insert
+
+  source pop
+    def result: $@Heap(1);
+    @Heap(1): ^@Heap(last);
+    1 -> !trickle-down
+    $result !
+  end pop
 end Heap
 
 test 'K-select'
@@ -62,24 +69,29 @@ test 'K-select'
    {name: 'Frank', age: 5}]... -> !heap::insert
 
   assert $heap::get-unsorted <[<{name: <='Debra'>}>, <{name: <='Alice'>}>, <{name: <='Frank'>}>](3)> 'has exactly all expected'
+
+  assert $heap::pop <={name: 'Debra', age: 9}> 'pops largest of the smallest'
+  assert $heap::get-unsorted <[<{name: <='Alice'>}>, <{name: <='Frank'>}>](2)> 'popped is removed'
 end 'K-select'
 
+data element <..>
+data elements <[<element>+ VOID]>
 processor Disjoint-Sets
   @: [1..$];
 
   templates find
-    when <=$@Disjoint-Sets($)> do
+    when <=$@Disjoint-Sets($::raw)> do
       $!
     otherwise
       // store it back for path-contraction
-      def set: $@Disjoint-Sets($) -> #;
-      @Disjoint-Sets($): $set;
+      def set: $@Disjoint-Sets($::raw) -> #;
+      @Disjoint-Sets($::raw): $set;
       $set !
   end find
 
   operator (a union b)
-    def a-set: $a -> find;
-    def b-set: $b -> find;
+    def a-set: $a::raw -> find;
+    def b-set: $b::raw -> find;
     @Disjoint-Sets($a-set): $b-set;
   end union
 
@@ -110,3 +122,28 @@ test 'Disjoint-Sets'
   (9 ds::union 4) -> !VOID
   assert 8 -> ds::find <=0+(7 -> ds::find)> 'groups joined'
 end 'Disjoint-Sets'
+
+templates part1
+  def coords: $;
+  def min1000: $Heap&{k: 1000, on: :(distance:)};
+
+  1..~$coords::last -> \(
+    def i: $;
+    $i~..$coords::last -> \(
+        def j: $;
+        1..3 -> ($coords($i; $) - $coords($j; $))"s" -> ($*$)"s2" -> ..=Sum&{of: :()}
+        -> { from: box´$i, to: box´$j, distance: $} !
+    \) !
+  \) -> !min1000::insert
+
+  def sets: $coords::length -> Disjoint-Sets;
+  $min1000::get-unsorted ... -> ($(from:) sets::union $(to:)) -> !VOID
+
+  def maxheap: $Heap&{k: 1000, on: :(size:)};
+  $sets::get-sets ... -> $({set:, size: §(elements:)::length}) -> !maxheap::insert
+  ($maxheap::pop -> $(size:)::raw) * ($maxheap::pop -> $(size:)::raw) * ($maxheap::pop -> $(size:)::raw) !
+end part1
+
+$boxes -> part1 -> !OUT::write
+'
+' -> !OUT::write
