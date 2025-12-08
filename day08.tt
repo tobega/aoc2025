@@ -63,3 +63,50 @@ test 'K-select'
 
   assert $heap::get-unsorted <[<{name: <='Debra'>}>, <{name: <='Alice'>}>, <{name: <='Frank'>}>](3)> 'has exactly all expected'
 end 'K-select'
+
+processor Disjoint-Sets
+  @: [1..$];
+
+  templates find
+    when <=$@Disjoint-Sets($)> do
+      $!
+    otherwise
+      // store it back for path-contraction
+      def set: $@Disjoint-Sets($) -> #;
+      @Disjoint-Sets($): $set;
+      $set !
+  end find
+
+  operator (a union b)
+    def a-set: $a -> find;
+    def b-set: $b -> find;
+    @Disjoint-Sets($a-set): $b-set;
+  end union
+
+  source get-sets
+    [$@Disjoint-Sets::first..$@Disjoint-Sets::last -> {element: $, set: $ -> find}]
+     -> $(collect {elements: List&{of: :(element:)}} by $({set:})) !
+  end get-sets
+end Disjoint-Sets
+
+test 'Disjoint-Sets'
+  def ds: 9 -> Disjoint-Sets;
+  assert 5 -> ds::find <=5> 'identity'
+
+  (3 ds::union 7) -> !VOID
+  assert 3 -> ds::find <=0+(7 -> ds::find)> 'joined'
+
+  (8 ds::union 9) -> !VOID
+  (1 ds::union 9) -> !VOID
+  (4 ds::union 3) -> !VOID
+  assert $ds::get-sets <[
+    <{set: <=2> elements: <[<=element´2>](1)>}>,
+    <{set: <=5> elements: <[<=element´5>](1)>}>,
+    <{set: <=6> elements: <[<=element´6>](1)>}>,
+    <{set: <=3|=4|=7> elements: <[<=element´3>, <=element´4>, <=element´7>](3)>}>,
+    <{set: <=1|=8|=9> elements: <[<=element´1>, <=element´8>, <=element´9>](3)>}>
+  ]> 'get-sets'
+
+  (9 ds::union 4) -> !VOID
+  assert 8 -> ds::find <=0+(7 -> ds::find)> 'groups joined'
+end 'Disjoint-Sets'
