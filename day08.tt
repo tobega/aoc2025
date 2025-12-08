@@ -153,7 +153,7 @@ source part1
 
   $min1000::get-unsorted ... -> ($(from:) sets::union $(to:)) -> !VOID
 
-  def maxheap: $Heap&{k: 1000, on: :(size:)};
+  def maxheap: $Heap&{k: 0, on: :(size:)};
   $sets::get-sets ... -> $({set:, size: §(elements:)::length}) -> !maxheap::insert
   ($maxheap::pop -> $(size:)::raw) * ($maxheap::pop -> $(size:)::raw) * ($maxheap::pop -> $(size:)::raw) !
 end part1
