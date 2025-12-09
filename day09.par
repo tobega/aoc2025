@@ -1,0 +1,33 @@
+def Main: ! = chan exit {
+  let console = Console.Open
+
+  let src = "input.txt"
+  src->Os.Path->Os.OpenFile.case {
+    .err e => {
+      console.print(e)
+      console.close
+      exit!
+    }
+    .ok reader => {}
+  }
+  
+  reader.begin.read.case {
+    .err e => {
+      console.print(e)
+      console.close
+      exit!
+    }
+    .ok reader => {
+      reader.case {
+        .end! => {
+            console.close
+            exit!
+        }
+        .chunk(bytes) => {
+            console.print(String.FromBytes(bytes))
+            reader.loop
+        }
+      }
+    }
+  }
+}
