@@ -10,24 +10,51 @@ def Main: ! = chan exit {
     }
     .ok reader => {}
   }
+
+  let builder = String.Builder
   
   reader.begin.read.case {
     .err e => {
       console.print(e)
       console.close
+      builder.build
       exit!
     }
     .ok reader => {
       reader.case {
-        .end! => {
-            console.close
-            exit!
-        }
+        .end! => {}
         .chunk(bytes) => {
-            console.print(String.FromBytes(bytes))
+            builder.add(String.FromBytes(bytes))
             reader.loop
         }
       }
+    }
+  }
+  let lines = Split(builder.build, .whitespace!)
+  lines.begin.case {
+    .end => {}
+    .item (l) lines => {
+       console.print(l)
+       lines.loop
+    }
+  }
+  console.close
+  exit!
+}
+
+
+dec Split : [String, Char.Class] List<String>
+def Split = [s, c] chan yield {
+  let r = String.Parser(s)
+  r.begin.match(.repeat.one c, .repeat1.non c).case {
+    .end _ => { yield.end! }
+    .fail => {
+       r.close
+       yield.end!
+    }
+    .match(_, part) => {
+      yield.item(part)
+      r.loop
     }
   }
 }
