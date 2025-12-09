@@ -24,3 +24,118 @@ end part1
 $red-tiles -> part1 -> !OUT::write
 '
 ' -> !OUT::write
+
+// grid with 0,0 at top left
+// turning right is (vx, vy) = (-vy, vx), turning left is (vx, vy) = (vy, -vx)
+// figure out if "inside" is on the right or left of direction of motion by adding up right (+1) and left turns (-1)
+// px is what you subtract to get to previous, nx is what you add to get to next (so they "move" in the same direction)
+// A corner is convex if equal to main rotation, concave if not.
+// "inside" is on the main-rotation side of the line
+
+def polygon-corners: $red-tiles -> \(
+  @: [$(1)];
+  $(2..last)... -> #
+  ^@(first) -> #
+  $@!
+  otherwise
+    def forward: { px: $(x:) - $@(last; x:), py: $(y:) - $@(last; y:), $};
+    @(last; nx:): $forward(px:);
+    @(last; ny:): $forward(py:);
+    ..|@: $forward;
+\) -> \(
+  [$... -> #] !
+  when <{ nx: <..~0"x">, py: <0"y"~..>}
+  |{ nx: <0"x"~..>, py: <..~0"y">}
+  |{ ny: <0"y"~..>, px: <0"x"~..>}
+  |{ ny: <..~0"y">, px: <..~0"x">}
+  > do {$, rotation: 'right'} !
+  when <{ nx: <0"x"~..>, py: <0"y"~..>}
+  |{ nx: <..~0"x">, py: <..~0"y">}
+  |{ ny: <0"y"~..>, px: <..~0"x">}
+  |{ ny: <..~0"y">, px: <0"x"~..>}
+  > do {$, rotation: 'left'} !
+  otherwise 'straight line' -> $ + 5 ! // error if this case exists
+\);
+
+def main-rotation: $polygon-corners(collect {turns: Count} by [{rotation: 'left'}, {rotation: 'right'}])
+... -> ..=Max&{by: :(turns:), select: :(rotation:)};
+
+$main-rotation ->\(<=rotation´'left'> $ ! \) -> $ + 5 -> !VOID // assumption of right rotation failed 
+
+operator (a compatible b)
+  [$a -> #]... -> 1 !
+  // bottom-right convex
+  when <{rotation: <='right'>, nx: <..~0"x">}> do $b -> \(<{x: <..$a(x:)>, y: <..$a(y:)>}> $!\) !
+  // bottom-left convex
+  when <{rotation: <='right'>, ny: <..~0"y">}> do $b -> \(<{x: <$a(x:)..>, y: <..$a(y:)>}> $!\) !
+  // top-left convex
+  when <{rotation: <='right'>, nx: <0"x"~..>}> do $b -> \(<{x: <$a(x:)..>, y: <$a(y:)..>}> $!\) !
+  // top-right convex
+  when <{rotation: <='right'>, ny: <0"y"~..>}> do $b -> \(<{x: <$a(x:)..>, y: <$a(y:)..>}> $!\) !
+  // top or left concave
+  when <{rotation: <='left'>, ny: <..~0"y">}> do $b -> \(<{x: <$a(x:)..>}|{y: <$a(y:)..>}> $!\) !
+  // top or right concave
+  when <{rotation: <='left'>, nx: <0"x"~..>}> do $b -> \(<{x: <..$a(x:)>}|{y: <$a(y:)..>}> $!\) !
+  // bottom or right concave
+  when <{rotation: <='left'>, ny: <0"y"~..>}> do $b -> \(<{x: <..$a(x:)>}|{y: <..$a(y:)>}> $!\) !
+  // bottom or left concave
+  when <{rotation: <='left'>, nx: <..~0"x">}> do $b -> \(<{x: <$a(x:)..>}|{y: <..$a(y:)>}> $!\) !
+end compatible
+
+templates no-intersects
+  def rect: $;
+  1 -> #
+  when <$polygon-corners::last~..> do $rect !
+  otherwise
+    def prev: $;
+    def bound: $polygon-corners($);
+    $bound -> \(
+      // cuts through down
+      when <{x: <$rect(x1:)~..~$rect(x2:)|$rect(x2:)~..~$rect(x1:)>}
+      ?($rect <{y1: <$bound(y:)~..~$bound(y:)+$bound(ny:)>}|{y1: <$bound(y:)+$bound(ny:)~..~$bound(y:)>}
+        |{y2: <$bound(y:)~..~$bound(y:)+$bound(ny:)>}|{y2: <$bound(y:)+$bound(ny:)~..~$bound(y:)>}
+      >)
+      > do !VOID
+      // cuts through across
+      when <{y: <$rect(y1:)~..~$rect(y2:)|$rect(y2:)~..~$rect(y1:)>}
+      ?($rect <{x1: <$bound(x:)~..~$bound(x:)+$bound(nx:)>}|{x1: <$bound(x:)+$bound(nx:)~..~$bound(x:)>}
+        |{x2: <$bound(x:)~..~$bound(x:)+$bound(nx:)>}|{x2: <$bound(x:)+$bound(nx:)~..~$bound(x:)>}
+      >)
+      > do !VOID
+      // on edge
+      when <{x: <=$rect(x1:)>, y: <$rect(y1:)..$rect(y2:)|$rect(y2:)..$rect(y1:)>}
+      |{x: <=$rect(x2:)>, y: <$rect(y1:)..$rect(y2:)|$rect(y2:)..$rect(y1:)>}
+      |{y: <=$rect(y1:)>, x: <$rect(x1:)..$rect(x2:)|$rect(x2:)..$rect(x1:)>}
+      |{y: <=$rect(y2:)>, x: <$rect(x1:)..$rect(x2:)|$rect(x2:)..$rect(x1:)>}
+      > do
+        ($bound compatible {x: $rect(x1:), y: $rect(y1:)})
+        -> ($bound compatible {x: $rect(x1:), y: $rect(y2:)})
+        -> ($bound compatible {x: $rect(x2:), y: $rect(y2:)})
+        -> ($bound compatible {x: $rect(x2:), y: $rect(y1:)})
+        -> 1 !
+      otherwise 1 !
+    \) -> $prev + 1 -> #
+end no-intersects
+
+source part2
+  @: 0"t2";
+  $polygon-corners::first..~$polygon-corners::last -> \(
+    def a: $;
+    $a~..$polygon-corners::last -> \(
+      def b: $;
+      ($polygon-corners($a) compatible $polygon-corners($b))
+      -> ($polygon-corners($b) compatible $polygon-corners($a))
+      -> {$polygon-corners($a; {x1: §(x:), y1: §(y:)}), $polygon-corners($b; {x2: §(x:), y2: §(y:)})}
+      -> $({x1:,y1:,x2:,y2:, size: ((§(x2:) - §(x1:) -> abs -> $ + 1"x") * (§(y2:) - §(y1:) -> abs -> $ + 1"y"))"t2"})
+      -> #
+      when <{size: <$@part2~..>}> do
+        $ -> no-intersects
+        -> @part2: $(size:);
+    \) -> !VOID
+  \) -> !VOID
+  $@ !
+end part2
+
+$part2 -> !OUT::write
+'
+' -> !OUT::write
