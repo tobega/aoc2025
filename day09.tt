@@ -1,0 +1,26 @@
+composer parse-coordinate
+  { x: <INT"x"> (<=','>), y: <INT"y"> }
+end parse-coordinate
+
+def red-tiles: [$IN::lines -> parse-coordinate];
+
+templates abs
+  when <?($::raw <..~0>)> do -$!
+  otherwise $!
+end abs
+
+templates part1
+  def corners: $;
+
+  $corners::first..~$corners::last -> \(
+    def a: $;
+    $a~..$corners::last -> \(
+        def b: $;
+        ((($corners($a; x:) - $corners($b; x:) -> abs) + 1"x") * (($corners($a; y:) - $corners($b; y:) -> abs) + 1"y"))"t2" !
+    \) !
+  \) -> ..=Max&{by: :(), select: :()} !
+end part1
+
+$red-tiles -> part1 -> !OUT::write
+'
+' -> !OUT::write
