@@ -1,0 +1,25 @@
+composer parse-output-list
+  (def from: <node>; <=':'>) <node>+ -> {from: $from, to: $}
+  rule node: (<WS>?) <node´'[a-z]{3}'>
+end parse-output-list
+
+def connections: {| $IN::lines -> parse-output-list |};
+
+source part1
+  @: 0;
+  { path: [], to: 'you'} -> #
+  $@ !
+
+  when <{to: <='out'>}> do
+    @: $@ + 1;
+  when <{ path: <[<=$(to:)>]>}> do
+    !VOID // loop
+  otherwise
+    { path: [$(path:)..., $(to:)],
+      by ({|{from: $(to:)}|} join $connections)... -> $({to:})
+    } -> #
+end part1
+
+$part1 -> !OUT::write
+'
+' -> !OUT::write
