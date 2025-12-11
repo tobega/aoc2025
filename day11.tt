@@ -23,3 +23,86 @@ end part1
 $part1 -> !OUT::write
 '
 ' -> !OUT::write
+
+// Been playing a little interactively with this
+// from dac to fft are no paths.
+
+source from-dac-to-out
+  @: 0;
+  { path: [], to: 'dac'} -> #
+  $@ !
+
+  when <{to: <='out'>}> do
+    @: $@ + 1;
+  when <{ path: <[<=$(to:)>]>}|{to: <='out'>}> do
+    !VOID // loop
+  when <{to: <='fft'>}> do
+    1"apple" + 1"orange" ! // impossible
+  otherwise
+    { path: [$(path:)..., $(to:)],
+      by ({|{from: $(to:)}|} join $connections)... -> $({to:})
+    } -> #
+end from-dac-to-out
+
+// going from svr to fft takes too long, go from fft instead
+source to-fft-from-svr
+  @: 0;
+  { path: [], from: 'fft'} -> #
+  $@ !
+
+  when <{from: <='svr'>}> do
+    @: $@ + 1;
+  when <{ path: <[<=$(from:)>]>}|{from: <='dac'>}> do
+    !VOID // loop
+  otherwise
+    { path: [$(from:), $(path:)...],
+      by ({|{to: $(from:)}|} join $connections)... -> $({from:})
+    } -> #
+end to-fft-from-svr
+
+source nodes-reachable-from-fft
+  @: 0;
+  {|{to: 'fft'}|} -> #
+  when <?($::count <~=$@>)> do
+    def prev: $;
+    @: $::count;
+    ($({from: §(to:)}) join $connections) -> $({to:}) -> ($ union $prev) -> #
+  otherwise $ !
+end nodes-reachable-from-fft
+
+source nodes-reaching-dac
+  @: 0;
+  {|{from: 'dac'}|} -> #
+  when <?($::count <~=$@>)> do
+    def prev: $;
+    @: $::count;
+    ($({to: §(from:)}) join $connections) -> $({from:}) -> ($ union $prev) -> #
+  otherwise $ !
+end nodes-reaching-dac
+
+def fft-to-dac-connections: ($nodes-reaching-dac join ($nodes-reachable-from-fft -> $({from: §(to:)})))
+-> ($ join $connections)
+-> ($ join (($nodes-reaching-dac -> $({to: §(from:)})) join $nodes-reachable-from-fft));
+
+source to-dac-from-fft
+  @: 0;
+  { path: [], from: 'dac'} -> #
+  $@ !
+
+  when <{from: <='fft'>}> do
+    @: $@ + 1;
+  when <{ path: <[<=$(from:)>]>}|{from: <='fft'>}|{from: <='svr'>}> do
+    !VOID // loop
+  otherwise
+    { path: [$(path:)..., $(from:)],
+      by ({|{to: $(from:)}|} join $fft-to-dac-connections)... -> $({from:})
+    } -> #
+end to-dac-from-fft
+
+source part2
+  $to-fft-from-svr * $to-dac-from-fft * $from-dac-to-out !
+end part2
+
+$part2 -> !OUT::write
+'
+' -> !OUT::write
