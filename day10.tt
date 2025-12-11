@@ -1,0 +1,94 @@
+composer parse-line
+  { state-diagram: <state>,  button-wirings: [<button>+], joltage-ratings: <joltages> }
+  rule state: (<='['>) <'[\.#]+'> (<=']'> <WS>)
+  rule button: (<='('>) <int-list> (<=')'> <WS>)
+  rule int-list: [<int-value>+]
+  rule int-value: <INT> (<=','>?)
+  rule joltages: (<='{'>) <int-list> (<='}'>)
+end parse-line
+
+def manual: [$IN::lines -> parse-line];
+
+def fill-patterns: 0:[[x 00 x], [x ff x]];
+operator (b append-bit v)
+  [$b -> #]... -> $::shift&{left: 1, fill: $fill-patterns($v)} !
+
+  when <?($::asInteger <..~0>)> do
+    [x 00 ($) x] !
+  otherwise
+    $ !
+end append-bit
+
+test 'append-bit'
+  assert ([x 00 x] append-bit 0) <=[x 00 x]> 'add zero'
+  assert ([x 00 x] append-bit 1) <=[x 01 x]> 'add one'
+  assert ([x 80 x] append-bit 0) <=[x 0100 x]> 'shift add zero'
+  assert ([x 80 x] append-bit 1) <=[x 0101 x]> 'shift add one'
+end 'append-bit'
+
+templates encode-state
+  @: [x 00 x];
+  [$...] -> $(last..first:-1)... -> #
+  $@ !
+  when <='.'> do @: ($@ append-bit 0);
+  otherwise @: ($@ append-bit 1);
+end encode-state
+
+templates extend-shift
+  def shift: $;
+  [x 01 x] -> $::shift&{left: $shift, fill: [x 00 x]} -> #
+  when <?($::asInteger <=0>)> do [x ($) 00 x] -> $::shift&{left: $shift, fill: [x 00 x]} -> #
+  otherwise $ !
+end extend-shift
+
+templates encode-button
+  @: [x 00 x];
+  $... -> extend-shift -> @:($ or $@);
+  $@ !
+end encode-button
+
+operator (list select n)
+  $n -> #
+  when <=0> do [] !
+  otherwise
+    def rest: $n - 1;
+    $list::first..$list::last-$rest
+    -> [$list($), by ($list($~..last) select $rest)]
+    -> [$(first), $(last)...] !
+end select
+
+test 'select'
+  assert [([1,2,3] select 1)] <[<[<=1>]>,<[<=2>]>,<[<=3>]> VOID]> 'select one'
+  assert [([1,2,3] select 2)] <[<[<=1>,<=2>]>,<[<=1>,<=3>]>,<[<=2>,<=3>]> VOID]> 'select two'
+  assert [([1,2,3] select 3)] <[<[<=1>,<=2>,<=3>]> VOID]> 'select three'
+  assert [([1,2,3,4] select 2)] <[](6)> 'two of four'
+end 'select'
+
+templates find-pushes
+  def target: $(state-diagram:) -> encode-state;
+  def buttons: [$(button-wirings:)... -> encode-button];
+  @: 0;
+  1 -> #
+  $@!
+
+  when <$buttons::length~..> do 'unsolvable' !
+  when <?($@ <=0>)> do
+    def presses: $;
+    ($buttons select $) -> \(
+        @: ($target xor $target); // to get the right length. Alternatively we could test integer value
+        $... -> @: ($ xor $@);
+        $@ -> #
+        when <=$target> do 1 !
+    \) -> @: $presses;
+    $ + 1 -> #
+  otherwise
+    !VOID  
+end find-pushes
+
+templates part1
+  $... -> find-pushes -> ..=Sum&{of: :()} !
+end part1
+
+$manual -> part1 -> !OUT::write
+'
+' -> !OUT::write
