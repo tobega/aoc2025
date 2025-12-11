@@ -1,0 +1,37 @@
+composer parse-output-list
+  (def from: <node>; <=':'>) <node>+ -> {from: $from, to: $}
+  rule node: (<WS>?) <node´'[a-z]{3}'>
+end parse-output-list
+
+def connections: {| $IN::lines -> parse-output-list |};
+
+// find the fix-point
+source find-fix&{from:, to:}
+  @: {count: 0"1", reached: {||}};
+  {|{to: $from, paths: 1"1"}|} -> #
+  $@(count:) !
+  when <~=$@(reached:)> do
+    @(reached:): $;
+    ($({paths:, from: §(to:)}) join $connections) -> $(collect {paths: Sum&{of: :(paths:)}} by $({to:}))
+    -> ($ union $@(reached:)) -> $(collect {paths: Max&{by: :(paths:), select: :(paths:)}} by $({to:})) -> #
+  otherwise
+    $ -> ($ matching {|{to: $to}|}) ... -> $(paths:) -> @(count:): ($)"1";
+end find-fix
+
+source part1
+  $find-fix&{from: 'you', to: 'out'} !
+end part1
+
+$part1 -> !OUT::write
+'
+' -> !OUT::write
+
+source part2
+  $find-fix&{from: 'svr', to: 'fft'} * $find-fix&{from: 'fft', to: 'dac'} * $find-fix&{from: 'dac', to: 'out'}
+  + $find-fix&{from: 'svr', to: 'dac'} * $find-fix&{from: 'dac', to: 'fft'} * $find-fix&{from: 'fft', to: 'out'}
+  !
+end part2
+
+$part2 -> !OUT::write
+'
+' -> !OUT::write
