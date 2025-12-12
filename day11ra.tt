@@ -6,20 +6,24 @@ end parse-output-list
 def connections: {| $IN::lines -> parse-output-list |};
 
 // find the fix-point
-source find-fix&{from:, to:}
-  @: {count: 0"1", reached: {||}};
+source find-fix&{from:}
+  @: {||};
   {|{to: $from, paths: 1"1"}|} -> #
-  $@(count:) !
-  when <~=$@(reached:)> do
-    @(reached:): $;
+  $@ !
+  when <~=$@> do
+    @: $;
     ($({paths:, from: §(to:)}) join $connections) -> $(collect {paths: Sum&{of: :(paths:)}} by $({to:}))
-    -> ($ union $@(reached:)) -> $(collect {paths: Max&{by: :(paths:), select: :(paths:)}} by $({to:})) -> #
-  otherwise
-    $ -> ($ matching {|{to: $to}|}) ... -> $(paths:) -> @(count:): ($)"1";
+    -> ($ union $@) -> $(collect {paths: Max&{by: :(paths:), select: :(paths:)}} by $({to:})) -> #
 end find-fix
 
+templates get-count&{to:}
+  @: 0"1";
+  $ -> ($ matching {|{to: $to}|}) ... -> $(paths:) -> @: ($)"1";
+  $@!
+end get-count
+
 source part1
-  $find-fix&{from: 'you', to: 'out'} !
+  $find-fix&{from: 'you'} -> get-count&{to: 'out'} !
 end part1
 
 $part1 -> !OUT::write
@@ -27,8 +31,11 @@ $part1 -> !OUT::write
 ' -> !OUT::write
 
 source part2
-  $find-fix&{from: 'svr', to: 'fft'} * $find-fix&{from: 'fft', to: 'dac'} * $find-fix&{from: 'dac', to: 'out'}
-  + $find-fix&{from: 'svr', to: 'dac'} * $find-fix&{from: 'dac', to: 'fft'} * $find-fix&{from: 'fft', to: 'out'}
+  def from-svr: $find-fix&{from: 'svr'};
+  def from-fft: $find-fix&{from: 'fft'};
+  def from-dac: $find-fix&{from: 'dac'};
+  ($from-svr -> get-count&{to:'fft'})"1" * ($from-fft -> get-count&{to: 'dac'})"1" * ($from-dac -> get-count&{to: 'out'})"1"
+  + ($from-svr -> get-count&{to: 'dac'})"1" * ($from-dac -> get-count&{to: 'fft'})"1" * ($from-fft -> get-count&{to: 'out'})"1"
   !
 end part2
 
