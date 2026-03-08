@@ -3,3 +3,9 @@
 .jj/
 
 *.class
+
+lib*/
+
+*.iml
+.idea/
+.DS_Store

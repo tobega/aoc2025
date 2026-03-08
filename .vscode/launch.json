@@ -3,6 +3,16 @@
   "configurations": [
     {
       "type": "java",
+      "name": "Launch Java File",
+      "request": "launch",
+      "vmArgs": [
+                "-cp",
+                "${workspaceFolder}/lib/polyglot-23.1.1.jar:${workspaceFolder}/lib/tailspin-v0.5.jar"
+            ],
+      "mainClass": "${file}",
+    },
+    {
+      "type": "java",
       "name": "Launch Current File",
       "request": "launch",
       "classPaths": [
