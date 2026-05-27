@@ -41,14 +41,33 @@ public class Day02tt {
                 $ * 10"1" -> # !
             end check-twice
 
+            silly-value templates
+              @ set 0"1";
+              value is $;
+              10"1" -> # !
+
+              when <|?($value mod $ matches <|$value ~/ $ ~..>)> do VOID
+              when <|?($value mod $ matches <|$@~..>)> do
+                @ set $value mod $;
+                multiplier is $;
+                $@ -> auxiliary templates
+                  when <|..~$value> do $ * $multiplier + $@silly-value -> #!
+                  when <|=$value> do ($value)"silly" !
+                    @silly-value set $value; --avoid finding another repeat pattern
+                end !
+                $multiplier * 10"1" -> #!
+              otherwise $ * 10"1" -> #!
+            end silly-value
+
             count-silly templates
-              @ set 0"twice";
+              @ set { twice: 0"twice", silly: 0"silly"};
               $... -> templates
                 interval is $;
                 $interval(start:) -> !#
 
                 when <|..$interval(end:)> do
-                    $ -> check-twice -> @count-silly set $@count-silly + $;
+                    $ -> check-twice -> @count-silly(twice:) set $@count-silly(twice:) + $;
+                    $ -> silly-value -> @count-silly(silly:) set $@count-silly(silly:) + $;
                     $ + 1"1" -> !#
               end -> !VOID
               $@!
