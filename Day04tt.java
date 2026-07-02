@@ -34,11 +34,7 @@ public class Day04tt {
         when <|?($@(plan:; $(1\\); $(2\\)) matches ´|..|='.'´<|..~4>)> do
           @(removed:) set $@(removed:) + 1"1";
           @(plan:; $(1\\); $(2\\)) set '.';
-          fromi is $(1\\)-1;
-          toi is $(1\\)+1;
-          fromj is $(2\\)-1;
-          toj is $(2\\)+1;
-          neighbours is [$@(plan:; $fromi..$toi as i; $fromj..$toj as j; -> if <|..> -> [$i, $j]) ... ...];
+          neighbours is [$@(plan:; ($(1\\)-1)..($(1\\)+1) as i; ($(2\\)-1)..($(2\\)+1) as j; -> if <|..> -> [$i, $j]) ... ...];
           $neighbours... -> @(plan:; $(1\\); $(2\\)) set $@(plan:; $(1\\); $(2\\)) - 1;
           $neighbours... -> !#
       end !
