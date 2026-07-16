@@ -56,9 +56,9 @@ public class Day01tt {
           $ -> !REJECT
       end part2
       
-      $BINDINGS::instructions -> part1 !
+      $BINDINGS(instructions:) -> part1 !
       
-      $BINDINGS::instructions -> part2 !
+      $BINDINGS(instructions:) -> part2 !
       """;
     
   public static void main(String[] args) throws IOException {

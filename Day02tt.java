@@ -11,7 +11,7 @@ public class Day02tt {
     static String program = """
             start requires <|"1">
             end requires <|"1">
-            intervals is [$BINDINGS::ranges... -> {start: ($(0))"1", end: ($(1))"1"}];
+            intervals is [$BINDINGS(ranges:)... -> {start: ($(0))"1", end: ($(1))"1"}];
             -- still haven't implemented tests
             --intervals is [[
             --  [11,22],
@@ -35,7 +35,7 @@ public class Day02tt {
               value is $;
               10"1" -> # !
 
-              when <|$value ~/ $ ~.. > do
+              when <|($value ~/ $)~.. > do
                 $ -> if <|?($value ~/ $ * 10"1" matches <|$..>)> -> if <|?($value ~/ $ matches <|=$value mod $>)> -> ($value)"twice" !
               otherwise
                 $ * 10"1" -> # !
@@ -46,7 +46,7 @@ public class Day02tt {
               value is $;
               10"1" -> # !
 
-              when <|?($value mod $ matches <|$value ~/ $ ~..>)> do VOID
+              when <|?($value mod $ matches <|($value ~/ $)~..>)> do VOID
               when <|?($value mod $ matches <|$@~..>)> do
                 @ set $value mod $;
                 multiplier is $;

@@ -9,7 +9,7 @@ import org.graalvm.polyglot.PolyglotAccess;
 
 public class Day04tt {
     static String program = """
-      grid is [$BINDINGS::rolls ... -> [$ ... -> '$;']];
+      grid is [$BINDINGS(rolls:) ... -> [$ ... -> '$;']];
 
       count-adjacent templates
         when <|?($grid($(1\\); $(\\1)) matches <|='@'>)> do

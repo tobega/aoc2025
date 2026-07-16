@@ -39,7 +39,7 @@ public class Day03tt {
           end -> !#
       end joltage
 
-      [$BINDINGS::banks... -> joltage] -> templates
+      [$BINDINGS(banks:)... -> joltage] -> templates
         @ set 0;
         $... -> @ set $@ + $;
         $@ !
