@@ -12,28 +12,25 @@ public class Day05tt {
     static String program = """
       compact-ranges templates
         @ set [];
-        $... -> auxiliary templates
-          @ set 'pending';
-          range is $;
-          @compact-ranges set [$@compact-ranges... -> #, $range -> if <|?($@ matches <|='pending'>)>];
+        compact auxiliary sink
+          @ set $;
+          @compact-ranges set [$@compact-ranges... -> #, $@];
 
-          when <|?($@ matches <|='inserted'>)> do $!
-          when <|{from: <|$range(to:)~..>}> do
-            $range! $! @ set 'inserted';
-          when <|{from: <|$range(from:)..>}> do
-            { from: $range(from:), to: $(to:) -> templates
-              when <|$range(to:)..> do $ !
-              otherwise $range(to:) ! 
-            end} !
-            @ set 'inserted';
-          when <|{to: <|$range(from:)..>}> do
-            { from: $(from:), to: $(to:) -> templates
-              when <|$range(to:)..> do $ !
-              otherwise $range(to:) ! 
-            end} !
-            @ set 'inserted';
-          when <|{to: <|..~$range(from:)>}> do $ !
-        end -> !VOID
+          when <|{from: <|$@(to:)~..>}> do
+            $@! @ set $;
+          when <|{from: <|$@(from:)..>}> do
+            @ set { from: $@(from:), to: $(to:) -> templates
+              when <|$@compact(to:)..> do $ !
+              otherwise $@compact(to:) !
+            end};
+          when <|{to: <|$@(from:)..>}> do
+            @ set { from: $(from:), to: $(to:) -> templates
+              when <|$@compact(to:)..> do $ !
+              otherwise $@compact(to:) ! 
+            end};
+          when <|{to: <|..~$@(from:)>}> do $ !
+        end compact
+        $... -> !compact
         $@ !
       end compact-ranges
 
@@ -61,6 +58,13 @@ public class Day05tt {
 
       -- part 1
       [$BINDINGS(ingredients:)... -> ingredient´($)] -> count-fresh !
+
+      -- part 2
+      $ranges -> templates
+        @ set 0;
+        $... -> @ set $@ + $(to:)::raw - $(from:)::raw + 1;
+        $@ !
+      end !
       """;
     
   public static void main(String[] args) throws IOException {
